@@ -1,75 +1,84 @@
-# app.py – FINAL VERSION (Streamlit 2025 Compatible)
+# app.py – FINAL: Load Patient + Accurate Prediction
 import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
 from tensorflow.keras.models import load_model
 
+# --- Load model & tools ---
 @st.cache_resource
-def load():
+def load_resources():
     model = load_model('heart_attack_model.h5')
     scaler = joblib.load('scaler.pkl')
     encoders = joblib.load('encoders.pkl')
     cols = joblib.load('columns.pkl')
     return model, scaler, encoders, cols
 
-model, scaler, encoders, columns = load()
+model, scaler, encoders, columns = load_resources()
 
+# --- Initialize session state ---
+if 'patient' not in st.session_state:
+    st.session_state.patient = {}
+
+# --- UI ---
 st.title("Heart Attack Risk Predictor")
-st.write("Enter **all patient details** – **sliders fixed & validated**")
+st.write("Enter patient details or **load high-risk example**")
 
-# === INPUT FORM ===
+# --- Load High-Risk Patient (24F) ---
+if st.button("Load Real High-Risk Patient (24F)"):
+    st.session_state.patient = {
+        'age': 24, 'gender': 'Female', 'region': 'North', 'urban_rural': 'Urban',
+        'ses': 'Low', 'smoking': 'Occasionally', 'alcohol': 'Occasionally', 'diet': 'Vegan',
+        'activity': 'High', 'screen_time': 15, 'sleep': 3,
+        'family_hx': 'Yes', 'diabetes': 'Yes', 'hypertension': 'No',
+        'cholesterol': 256, 'bmi': 33.9, 'resting_hr': 86,
+        'ecg': 'Normal', 'chest_pain': 'Typical', 'max_hr': 164,
+        'angina': 'No', 'spo2': 92.7, 'triglycerides': 373,
+        'systolic': 138, 'diastolic': 77
+    }
+    st.success("High-risk patient loaded!")
+    st.rerun()
+
+# --- Input Form (Use session_state or default) ---
 col1, col2 = st.columns(2)
 
 with col1:
-    age = st.slider("**Age**", 18, 60, 30, help="18–60 years")
-    gender = st.selectbox("**Gender**", ["Male", "Female"])
-    region = st.selectbox("**Region**", ["North", "South", "East", "West", "Central", "North-East"])
-    urban_rural = st.selectbox("**Urban/Rural**", ["Urban", "Rural"])
-    ses = st.selectbox("**SES**", ["Low", "Middle", "High"])
-    smoking = st.selectbox("**Smoking**", ["Never", "Occasionally", "Regularly"])
-    alcohol = st.selectbox("**Alcohol**", ["Never", "Occasionally", "Regularly"])
-    diet = st.selectbox("**Diet**", ["Vegetarian", "Non-Vegetarian", "Vegan"])
+    age = st.slider("**Age**", 18, 60, st.session_state.patient.get('age', 30))
+    gender = st.selectbox("**Gender**", ["Male", "Female"], index=["Male", "Female"].index(st.session_state.patient.get('gender', 'Male')))
+    region = st.selectbox("**Region**", ["North", "South", "East", "West", "Central", "North-East"], index=["North", "South", "East", "West", "Central", "North-East"].index(st.session_state.patient.get('region', 'East')))
+    urban_rural = st.selectbox("**Urban/Rural**", ["Urban", "Rural"], index=["Urban", "Rural"].index(st.session_state.patient.get('urban_rural', 'Urban')))
+    ses = st.selectbox("**SES**", ["Low", "Middle", "High"], index=["Low", "Middle", "High"].index(st.session_state.patient.get('ses', 'Middle')))
+    smoking = st.selectbox("**Smoking**", ["Never", "Occasionally", "Regularly"], index=["Never", "Occasionally", "Regularly"].index(st.session_state.patient.get('smoking', 'Never')))
+    alcohol = st.selectbox("**Alcohol**", ["Never", "Occasionally", "Regularly"], index=["Never", "Occasionally", "Regularly"].index(st.session_state.patient.get('alcohol', 'Never')))
+    diet = st.selectbox("**Diet**", ["Vegetarian", "Non-Vegetarian", "Vegan"], index=["Vegetarian", "Non-Vegetarian", "Vegan"].index(st.session_state.patient.get('diet', 'Non-Vegetarian')))
 
 with col2:
-    activity = st.selectbox("**Activity Level**", ["Sedentary", "Moderate", "High"])
-    screen_time = st.slider("**Screen Time (hrs)**", 0, 16, 8)
-    sleep = st.slider("**Sleep (hrs)**", 3, 12, 7)
-    family_hx = st.selectbox("**Family History**", ["Yes", "No"])
-    diabetes = st.selectbox("**Diabetes**", ["Yes", "No"])
-    hypertension = st.selectbox("**Hypertension**", ["Yes", "No"])
-    cholesterol = st.slider("**Cholesterol (mg/dL)**", 100, 400, 200)
-    bmi = st.slider("**BMI**", 15.0, 50.0, 25.0, step=0.1)
+    activity = st.selectbox("**Activity**", ["Sedentary", "Moderate", "High"], index=["Sedentary", "Moderate", "High"].index(st.session_state.patient.get('activity', 'Moderate')))
+    screen_time = st.slider("**Screen Time (hrs)**", 0, 16, st.session_state.patient.get('screen_time', 6))
+    sleep = st.slider("**Sleep (hrs)**", 3, 12, st.session_state.patient.get('sleep', 7))
+    family_hx = st.selectbox("**Family Hx**", ["Yes", "No"], index=["Yes", "No"].index(st.session_state.patient.get('family_hx', 'No')))
+    diabetes = st.selectbox("**Diabetes**", ["Yes", "No"], index=["Yes", "No"].index(st.session_state.patient.get('diabetes', 'No')))
+    hypertension = st.selectbox("**Hypertension**", ["Yes", "No"], index=["Yes", "No"].index(st.session_state.patient.get('hypertension', 'No')))
+    cholesterol = st.slider("**Cholesterol**", 100, 400, st.session_state.patient.get('cholesterol', 180))
+    bmi = st.slider("**BMI**", 15.0, 50.0, st.session_state.patient.get('bmi', 24.0), step=0.1)
 
 st.markdown("---")
 st.subheader("Clinical Data")
 col3, col4 = st.columns(2)
 with col3:
-    resting_hr = st.slider("**Resting HR (bpm)**", 50, 120, 75)
-    ecg = st.selectbox("**ECG**", ["Normal", "Abnormal"])
-    chest_pain = st.selectbox("**Chest Pain**", ["Typical", "Atypical", "Non-anginal", "Asymptomatic"])
+    resting_hr = st.slider("**Resting HR**", 50, 120, st.session_state.patient.get('resting_hr', 75))
+    ecg = st.selectbox("**ECG**", ["Normal", "Abnormal"], index=["Normal", "Abnormal"].index(st.session_state.patient.get('ecg', 'Normal')))
+    chest_pain = st.selectbox("**Chest Pain**", ["Typical", "Atypical", "Non-anginal", "Asymptomatic"], index=["Typical", "Atypical", "Non-anginal", "Asymptomatic"].index(st.session_state.patient.get('chest_pain', 'Non-anginal')))
 
 with col4:
-    max_hr = st.slider("**Max HR Achieved**", 80, 220, 150)
-    angina = st.selectbox("**Exercise Angina**", ["Yes", "No"])
-    spo2 = st.slider("**SpO2 (%)**", 85.0, 100.0, 96.0, step=0.1)
-    triglycerides = st.slider("**Triglycerides (mg/dL)**", 50, 500, 150)
-    systolic = st.slider("**Systolic BP**", 90, 200, 120)
-    diastolic = st.slider("**Diastolic BP**", 60, 120, 80)
+    max_hr = st.slider("**Max HR**", 80, 220, st.session_state.patient.get('max_hr', 150))
+    angina = st.selectbox("**Exercise Angina**", ["Yes", "No"], index=["Yes", "No"].index(st.session_state.patient.get('angina', 'No')))
+    spo2 = st.slider("**SpO2 (%)**", 85.0, 100.0, st.session_state.patient.get('spo2', 96.0), step=0.1)
+    triglycerides = st.slider("**Triglycerides**", 50, 500, st.session_state.patient.get('triglycerides', 150))
+    systolic = st.slider("**Systolic BP**", 90, 200, st.session_state.patient.get('systolic', 120))
+    diastolic = st.slider("**Diastolic BP**", 60, 120, st.session_state.patient.get('diastolic', 80))
 
-# === LOAD HIGH-RISK PATIENT (24F) ===
-if st.button("Load Real High-Risk Patient (24F)"):
-    age, gender, region = 24, "Female", "North"
-    urban_rural, ses = "Urban", "Low"
-    smoking, alcohol, diet = "Occasionally", "Occasionally", "Vegan"
-    activity, screen_time, sleep = "High", 15, 3
-    family_hx, diabetes, hypertension = "Yes", "Yes", "No"
-    cholesterol, bmi = 256, 33.9
-    resting_hr, ecg, chest_pain = 86, "Normal", "Typical"
-    max_hr, angina, spo2, triglycerides = 164, "No", 92.7, 373
-    systolic, diastolic = 138, 77
-    st.rerun()  # FIXED: Use st.rerun()
-
+# --- Predict ---
 if st.button("Predict Risk", type="primary"):
     data = {
         'Age': age, 'Gender': gender, 'Region': region, 'Urban/Rural': urban_rural,
@@ -100,6 +109,6 @@ if st.button("Predict Risk", type="primary"):
     st.markdown(f"### **Risk Probability: {prob:.1%}**")
     st.markdown(f"### **Prediction: {risk}**")
     if prob > 0.5:
-        st.error("**HIGH RISK – SEE CARDIOLOGIST NOW!**")
+        st.error("**HIGH RISK – URGENT CARDIOLOGY REFERRAL!**")
     else:
         st.success("Low risk – continue monitoring.")
