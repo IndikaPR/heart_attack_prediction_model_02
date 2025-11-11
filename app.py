@@ -1,4 +1,4 @@
-# app.py – FIXED & VALIDATED
+# app.py – FINAL VERSION (Streamlit 2025 Compatible)
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -18,7 +18,7 @@ model, scaler, encoders, columns = load()
 st.title("Heart Attack Risk Predictor")
 st.write("Enter **all patient details** – **sliders fixed & validated**")
 
-# === INPUT FORM WITH VALIDATION ===
+# === INPUT FORM ===
 col1, col2 = st.columns(2)
 
 with col1:
@@ -57,7 +57,7 @@ with col4:
     systolic = st.slider("**Systolic BP**", 90, 200, 120)
     diastolic = st.slider("**Diastolic BP**", 60, 120, 80)
 
-# === LOAD YOUR REAL PATIENT ===
+# === LOAD HIGH-RISK PATIENT (24F) ===
 if st.button("Load Real High-Risk Patient (24F)"):
     age, gender, region = 24, "Female", "North"
     urban_rural, ses = "Urban", "Low"
@@ -68,10 +68,9 @@ if st.button("Load Real High-Risk Patient (24F)"):
     resting_hr, ecg, chest_pain = 86, "Normal", "Typical"
     max_hr, angina, spo2, triglycerides = 164, "No", 92.7, 373
     systolic, diastolic = 138, 77
-    st.experimental_rerun()
+    st.rerun()  # FIXED: Use st.rerun()
 
 if st.button("Predict Risk", type="primary"):
-    # Build data
     data = {
         'Age': age, 'Gender': gender, 'Region': region, 'Urban/Rural': urban_rural,
         'SES': ses, 'Smoking Status': smoking, 'Alcohol Consumption': alcohol,
@@ -89,7 +88,6 @@ if st.button("Predict Risk", type="primary"):
     df = pd.DataFrame([data])
     df = df.reindex(columns=columns, fill_value=0)
 
-    # Encode safely
     for col in df.select_dtypes(include='object').columns:
         le = encoders.get(col)
         if le:
