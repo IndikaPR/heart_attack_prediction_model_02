@@ -1,13 +1,6 @@
-# STEP 14: Generate requirements.txt
-requirements = '''streamlit
+streamlit
 tensorflow
 scikit-learn
 pandas
 numpy
-joblib'''
-
-with open('requirements.txt', 'w') as f:
-    f.write(requirements)
-
-files.download('requirements.txt')
-print("requirements.txt generated and downloaded")
+joblib
